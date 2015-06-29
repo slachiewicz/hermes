@@ -10,10 +10,10 @@ import pl.allegro.tech.hermes.common.di.CommonBinder;
 import pl.allegro.tech.hermes.common.hook.Hook;
 import pl.allegro.tech.hermes.common.hook.HooksHandler;
 import pl.allegro.tech.hermes.frontend.di.FrontendBinder;
-import pl.allegro.tech.hermes.frontend.di.TrackersBinder;
 import pl.allegro.tech.hermes.frontend.listeners.BrokerAcknowledgeListener;
 import pl.allegro.tech.hermes.frontend.listeners.BrokerListeners;
 import pl.allegro.tech.hermes.frontend.listeners.BrokerTimeoutListener;
+import pl.allegro.tech.hermes.frontend.listeners.TrackersListener;
 import pl.allegro.tech.hermes.frontend.server.AbstractShutdownHook;
 import pl.allegro.tech.hermes.frontend.server.HermesServer;
 import pl.allegro.tech.hermes.frontend.services.HealthCheckService;
@@ -115,8 +115,8 @@ public final class HermesFrontend {
         private final List<Function<ServiceLocator, LogRepository>> logRepositories = new ArrayList<>();
 
         public HermesFrontend build() {
+            withDefaultRankBinding(wireTrackers(), Trackers.class);
             withDefaultRankBinding(listeners, BrokerListeners.class);
-            binders.add(new TrackersBinder(new ArrayList<LogRepository>()));
             return new HermesFrontend(hooksHandler, binders, logRepositories);
         }
 
@@ -157,6 +157,14 @@ public final class HermesFrontend {
                 }
             });
             return this;
+        }
+
+        private Trackers wireTrackers() {
+            Trackers trackers = new Trackers(new ArrayList<>());
+            TrackersListener trackersListener = new TrackersListener(trackers);
+            listeners.addAcknowledgeListener(trackersListener);
+            listeners.addTimeoutListener(trackersListener);
+            return trackers;
         }
 
         private <T> Builder withDefaultRankBinding(T instance, Class<T> clazz) {

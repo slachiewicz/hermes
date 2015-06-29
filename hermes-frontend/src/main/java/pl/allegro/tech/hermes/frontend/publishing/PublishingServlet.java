@@ -106,23 +106,16 @@ public class PublishingServlet extends HttpServlet {
                         asyncContext.addListener(new BrokerTimeoutAsyncListener(httpResponder, message, topic, messageState, listeners));
 
                         messagePublisher.publish(message, topic, messageState,
-                                new HttpPublishingCallback(httpResponder),
                                 new MetricsPublishingCallback(hermesMetrics, topic),
-                                new BrokerListenersPublishingCallback(listeners));
+                                new BrokerListenersPublishingCallback(listeners),
+                                new HttpPublishingCallback(httpResponder));
 
                     } catch (InvalidMessageException exception) {
                         httpResponder.badRequest(exception);
                     }
-                    return null;
                 },
-                input -> {
-                    httpResponder.badRequest(input, "Validation error");
-                    return null;
-                },
-                throwable -> {
-                    httpResponder.internalError(throwable, "Error while reading request");
-                    return null;
-                });
+                input -> httpResponder.badRequest(input, "Validation error"),
+                throwable -> httpResponder.internalError(throwable, "Error while reading request"));
     }
 
     private TopicName parseTopicName(HttpServletRequest request) {

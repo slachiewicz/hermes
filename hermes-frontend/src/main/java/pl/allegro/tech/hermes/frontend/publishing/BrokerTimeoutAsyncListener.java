@@ -33,8 +33,8 @@ public class BrokerTimeoutAsyncListener implements AsyncListener {
     @Override
     public void onTimeout(AsyncEvent event) throws IOException {
         if (messageState.getState() == SENDING_TO_KAFKA) {
-            httpResponder.accept();
             listeners.onTimeout(message, topic);
+            httpResponder.accept();
         }
     }
 

@@ -53,12 +53,10 @@ public class HttpResponder {
     }
 
     public void accept() {
-        trackers.get(topic).logInflight(messageId, topic.getName());
         completeCorrect(SC_ACCEPTED);
     }
 
     public void ok() {
-        trackers.get(topic).logPublished(messageId, topic.getName());
         completeCorrect(SC_CREATED);
     }
 
