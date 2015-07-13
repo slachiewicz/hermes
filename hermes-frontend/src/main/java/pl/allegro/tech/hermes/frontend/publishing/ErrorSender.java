@@ -33,4 +33,8 @@ public class ErrorSender {
             throw new InternalProcessingException(e);
         }
     }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
 }

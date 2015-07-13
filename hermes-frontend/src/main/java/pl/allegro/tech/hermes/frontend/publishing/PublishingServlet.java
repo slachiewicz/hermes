@@ -19,11 +19,14 @@ import pl.allegro.tech.hermes.tracker.frontend.Trackers;
 
 import javax.inject.Inject;
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,6 +51,8 @@ public class PublishingServlet extends HttpServlet {
     private final Integer defaultAsyncTimeout;
     private final Integer longAsyncTimeout;
     private final Integer chunkSize;
+
+    private Map<String, Long> milestones = new HashMap<>();
 
     @Inject
     public PublishingServlet(TopicsCache topicsCache,
@@ -76,11 +81,14 @@ public class PublishingServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        milestones.put("PublishingServlet.doPost.start", System.nanoTime());
+
         TopicName topicName = parseTopicName(request);
         final String messageId = UUID.randomUUID().toString();
         Optional<Topic> topic = topicsCache.getTopic(topicName);
 
         if (topic.isPresent()) {
+            milestones.put("PublishingServlet.doPost.topic.isPresent", System.nanoTime());
             handlePublishAsynchronously(request, response, topic.get(), messageId);
         } else {
             String cause = format("Topic %s not exists in group %s", topicName.getName(), topicName.getGroupName());
@@ -93,15 +101,22 @@ public class PublishingServlet extends HttpServlet {
         final MessageState messageState = new MessageState();
         final AsyncContext asyncContext = request.startAsync();
         final HttpResponder httpResponder = new HttpResponder(trackers, messageId, response, asyncContext, topic, errorSender, messageState,
-                request.getRemoteHost());
+                request.getRemoteHost(), milestones);
 
-        asyncContext.addListener(new TimeoutAsyncListener(httpResponder, messageState));
+        asyncContext.addListener(new TimeoutAsyncListener(httpResponder, messageState) {
+            @Override
+            public void onTimeout(AsyncEvent event) throws IOException {
+                super.onTimeout(event);
+                milestones.put("TimeoutAsyncListener.onTimeout", System.nanoTime());
+            }
+        });
         asyncContext.addListener(new MetricsAsyncListener(hermesMetrics, topic.getName(), topic.getAck()));
         asyncContext.setTimeout(topic.isReplicationConfirmRequired() ? longAsyncTimeout : defaultAsyncTimeout);
 
         new MessageReader(request, chunkSize, topic.getName(), hermesMetrics, messageState,
                 messageContent -> {
                     try {
+                        milestones.put("MessageReader.onRead", System.nanoTime());
                         Message message = contentTypeEnforcer.enforce(request.getContentType(),
                                 new Message(messageId, messageContent, clock.getTime()), topic);
 
@@ -109,10 +124,35 @@ public class PublishingServlet extends HttpServlet {
 
                         asyncContext.addListener(new BrokerTimeoutAsyncListener(httpResponder, message, topic, messageState, listeners));
 
+                        milestones.put("MessageReader.onRead.publishing", System.nanoTime());
                         messagePublisher.publish(message, topic, messageState,
                                 new HttpPublishingCallback(httpResponder),
-                                new MetricsPublishingCallback(hermesMetrics, topic),
-                                new BrokerListenersPublishingCallback(listeners));
+                                new MetricsPublishingCallback(hermesMetrics, topic) {
+                                    @Override
+                                    public void onPublished(Message message, Topic topic) {
+                                        super.onPublished(message, topic);
+                                        milestones.put("MetricsPublishingCallback.onPublished", System.nanoTime());
+                                    }
+
+                                    @Override
+                                    public void onUnpublished(Exception exception) {
+                                        super.onUnpublished(exception);
+                                        milestones.put("MetricsPublishingCallback.onUnpublished", System.nanoTime());
+                                    }
+                                },
+                                new BrokerListenersPublishingCallback(listeners) {
+                                    @Override
+                                    public void onUnpublished(Exception exception) {
+                                        super.onUnpublished(exception);
+                                        milestones.put("BrokerListenersPublishingCallback.onUnpublished", System.nanoTime());
+                                    }
+
+                                    @Override
+                                    public void onPublished(Message message, Topic topic) {
+                                        super.onPublished(message, topic);
+                                        milestones.put("BrokerListenersPublishingCallback.onPublished", System.nanoTime());
+                                    }
+                                });
 
                     } catch (InvalidMessageException exception) {
                         httpResponder.badRequest(exception);
@@ -121,10 +161,12 @@ public class PublishingServlet extends HttpServlet {
                 },
                 input -> {
                     httpResponder.badRequest(input, "Validation error");
+                    milestones.put("PublishingServlet.onValidationError", System.nanoTime());
                     return null;
                 },
                 throwable -> {
                     httpResponder.internalError(throwable, "Error while reading request");
+                    milestones.put("PublishingServlet.onOtherError", System.nanoTime());
                     return null;
                 });
     }

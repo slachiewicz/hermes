@@ -10,6 +10,9 @@ import pl.allegro.tech.hermes.tracker.frontend.Trackers;
 import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletResponse;
 
+import java.util.Arrays;
+import java.util.Map;
+
 import static java.lang.String.format;
 import static javax.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static javax.servlet.http.HttpServletResponse.SC_CREATED;
@@ -30,6 +33,7 @@ public class HttpResponder {
     private ErrorSender errorSender;
     private MessageState messageState;
     private String remoteHost;
+    private Map<String, Long> milestones;
     private boolean completed = false;
 
     public HttpResponder(
@@ -40,7 +44,7 @@ public class HttpResponder {
             Topic topic,
             ErrorSender errorSender,
             MessageState messageState,
-            String remoteHost) {
+            String remoteHost, Map<String, Long> milestones) {
 
         this.trackers = trackers;
         this.messageId = messageId;
@@ -50,6 +54,7 @@ public class HttpResponder {
         this.errorSender = errorSender;
         this.messageState = messageState;
         this.remoteHost = remoteHost;
+        this.milestones = milestones;
     }
 
     public void accept() {
@@ -109,6 +114,10 @@ public class HttpResponder {
 
             response.setStatus(status);
             response.setHeader(MESSAGE_ID.getName(), messageId);
+
+            LOGGER.debug("MESSAGE ID: {}, TRACE: {}", messageId,
+                    Arrays.toString(milestones.entrySet().toArray()));
+
             asyncContext.complete();
         }
     }
