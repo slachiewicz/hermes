@@ -52,8 +52,6 @@ public class PublishingServlet extends HttpServlet {
     private final Integer longAsyncTimeout;
     private final Integer chunkSize;
 
-    private Map<String, Long> milestones = new HashMap<>();
-
     @Inject
     public PublishingServlet(TopicsCache topicsCache,
                              HermesMetrics hermesMetrics,
@@ -81,6 +79,8 @@ public class PublishingServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        Map<String, Long> milestones = new HashMap<>();
+
         milestones.put("PublishingServlet.doPost.start", System.nanoTime());
 
         TopicName topicName = parseTopicName(request);
@@ -89,14 +89,15 @@ public class PublishingServlet extends HttpServlet {
 
         if (topic.isPresent()) {
             milestones.put("PublishingServlet.doPost.topic.isPresent", System.nanoTime());
-            handlePublishAsynchronously(request, response, topic.get(), messageId);
+            handlePublishAsynchronously(request, response, topic.get(), messageId, milestones);
         } else {
             String cause = format("Topic %s not exists in group %s", topicName.getName(), topicName.getGroupName());
             errorSender.sendErrorResponse(new ErrorDescription(cause, TOPIC_NOT_EXISTS), response, messageId);
         }
     }
 
-    private void handlePublishAsynchronously(HttpServletRequest request, HttpServletResponse response, Topic topic, String messageId)
+    private void handlePublishAsynchronously(HttpServletRequest request, HttpServletResponse response, Topic topic, String messageId,
+                                             Map<String, Long> milestones)
             throws IOException {
         final MessageState messageState = new MessageState();
         final AsyncContext asyncContext = request.startAsync();
