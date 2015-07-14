@@ -106,16 +106,28 @@ public class PublishingServlet extends HttpServlet {
 
         asyncContext.addListener(new TimeoutAsyncListener(httpResponder, messageState) {
             @Override
-            public void onTimeout(AsyncEvent event) throws IOException {
-                super.onTimeout(event);
-                milestones.put("TimeoutAsyncListener.onTimeout", System.nanoTime());
+            public void onTimeout(AsyncEvent event) {
+                asyncContext.start(() -> {
+                    try {
+                        super.onTimeout(event);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    milestones.put("TimeoutAsyncListener.onTimeout", System.nanoTime());
+                });
             }
         });
         asyncContext.addListener(new MetricsAsyncListener(hermesMetrics, topic.getName(), topic.getAck()) {
             @Override
             public void onTimeout(AsyncEvent event) throws IOException {
-                super.onTimeout(event);
-                milestones.put("MetricsAsyncListener.onComplete", System.nanoTime());
+                asyncContext.start(() -> {
+                    try {
+                        super.onTimeout(event);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    milestones.put("MetricsAsyncListener.onComplete", System.nanoTime());
+                });
             }
         });
         asyncContext.setTimeout(topic.isReplicationConfirmRequired() ? longAsyncTimeout : defaultAsyncTimeout);
@@ -132,8 +144,14 @@ public class PublishingServlet extends HttpServlet {
                         asyncContext.addListener(new BrokerTimeoutAsyncListener(httpResponder, message, topic, messageState, listeners) {
                             @Override
                             public void onTimeout(AsyncEvent event) throws IOException {
-                                milestones.put("BrokerTimeoutAsyncListener.onTimeout", System.nanoTime());
-                                super.onTimeout(event);
+                                asyncContext.start(() -> {
+                                    milestones.put("BrokerTimeoutAsyncListener.onTimeout", System.nanoTime());
+                                    try {
+                                        super.onTimeout(event);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                });
                             }
                         });
 
@@ -142,40 +160,52 @@ public class PublishingServlet extends HttpServlet {
                                 new HttpPublishingCallback(httpResponder) {
                                     @Override
                                     public void onUnpublished(Exception exception) {
-                                        super.onUnpublished(exception);
-                                        milestones.put("HttpPublishingCallback.onUnpublished", System.nanoTime());
+                                        asyncContext.start(() -> {
+                                            super.onUnpublished(exception);
+                                            milestones.put("HttpPublishingCallback.onUnpublished", System.nanoTime());
+                                        });
                                     }
 
                                     @Override
                                     public void onPublished(Message message, Topic topic) {
-                                        super.onPublished(message, topic);
-                                        milestones.put("HttpPublishingCallback.onPublished", System.nanoTime());
+                                        asyncContext.start(() -> {
+                                            super.onPublished(message, topic);
+                                            milestones.put("HttpPublishingCallback.onPublished", System.nanoTime());
+                                        });
                                     }
                                 },
                                 new MetricsPublishingCallback(hermesMetrics, topic) {
                                     @Override
                                     public void onPublished(Message message, Topic topic) {
-                                        super.onPublished(message, topic);
-                                        milestones.put("MetricsPublishingCallback.onPublished", System.nanoTime());
+                                        asyncContext.start(() -> {
+                                            super.onPublished(message, topic);
+                                            milestones.put("MetricsPublishingCallback.onPublished", System.nanoTime());
+                                        });
                                     }
 
                                     @Override
                                     public void onUnpublished(Exception exception) {
-                                        super.onUnpublished(exception);
-                                        milestones.put("MetricsPublishingCallback.onUnpublished", System.nanoTime());
+                                        asyncContext.start(() -> {
+                                            super.onUnpublished(exception);
+                                            milestones.put("MetricsPublishingCallback.onUnpublished", System.nanoTime());
+                                        });
                                     }
                                 },
                                 new BrokerListenersPublishingCallback(listeners) {
                                     @Override
                                     public void onUnpublished(Exception exception) {
-                                        super.onUnpublished(exception);
-                                        milestones.put("BrokerListenersPublishingCallback.onUnpublished", System.nanoTime());
+                                        asyncContext.start(() -> {
+                                            super.onUnpublished(exception);
+                                            milestones.put("BrokerListenersPublishingCallback.onUnpublished", System.nanoTime());
+                                        });
                                     }
 
                                     @Override
                                     public void onPublished(Message message, Topic topic) {
+                                    asyncContext.start(() -> {
                                         super.onPublished(message, topic);
                                         milestones.put("BrokerListenersPublishingCallback.onPublished", System.nanoTime());
+                                    });
                                     }
                                 });
 
