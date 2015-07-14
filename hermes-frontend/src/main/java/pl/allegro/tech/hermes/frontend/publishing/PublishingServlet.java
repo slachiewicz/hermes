@@ -111,7 +111,13 @@ public class PublishingServlet extends HttpServlet {
                 milestones.put("TimeoutAsyncListener.onTimeout", System.nanoTime());
             }
         });
-        asyncContext.addListener(new MetricsAsyncListener(hermesMetrics, topic.getName(), topic.getAck()));
+        asyncContext.addListener(new MetricsAsyncListener(hermesMetrics, topic.getName(), topic.getAck()) {
+            @Override
+            public void onTimeout(AsyncEvent event) throws IOException {
+                super.onTimeout(event);
+                milestones.put("MetricsAsyncListener.onComplete", System.nanoTime());
+            }
+        });
         asyncContext.setTimeout(topic.isReplicationConfirmRequired() ? longAsyncTimeout : defaultAsyncTimeout);
 
         new MessageReader(request, chunkSize, topic.getName(), hermesMetrics, messageState,
@@ -123,11 +129,29 @@ public class PublishingServlet extends HttpServlet {
 
                         messageValidators.check(topic.getName(), message.getData());
 
-                        asyncContext.addListener(new BrokerTimeoutAsyncListener(httpResponder, message, topic, messageState, listeners));
+                        asyncContext.addListener(new BrokerTimeoutAsyncListener(httpResponder, message, topic, messageState, listeners) {
+                            @Override
+                            public void onTimeout(AsyncEvent event) throws IOException {
+                                milestones.put("BrokerTimeoutAsyncListener.onTimeout", System.nanoTime());
+                                super.onTimeout(event);
+                            }
+                        });
 
                         milestones.put("MessageReader.onRead.publishing", System.nanoTime());
                         messagePublisher.publish(message, topic, messageState,
-                                new HttpPublishingCallback(httpResponder),
+                                new HttpPublishingCallback(httpResponder) {
+                                    @Override
+                                    public void onUnpublished(Exception exception) {
+                                        super.onUnpublished(exception);
+                                        milestones.put("HttpPublishingCallback.onUnpublished", System.nanoTime());
+                                    }
+
+                                    @Override
+                                    public void onPublished(Message message, Topic topic) {
+                                        super.onPublished(message, topic);
+                                        milestones.put("HttpPublishingCallback.onPublished", System.nanoTime());
+                                    }
+                                },
                                 new MetricsPublishingCallback(hermesMetrics, topic) {
                                     @Override
                                     public void onPublished(Message message, Topic topic) {

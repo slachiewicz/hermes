@@ -98,6 +98,11 @@ public class HttpResponder {
                     desc.getMessage(), topic.getName().qualifiedName(), remoteHost, messageState.getState().name()
             );
 
+            milestones.put("HttpResponder.complete." + desc.getCode().getHttpCode(), System.nanoTime());
+
+            LOGGER.debug("MESSAGE ID: {}, TRACE: {}", messageId,
+                    Arrays.toString(milestones.entrySet().toArray()));
+
             errorSender.sendErrorResponseQuietly(desc, response, messageId);
             asyncContext.complete();
         }
@@ -114,6 +119,8 @@ public class HttpResponder {
 
             response.setStatus(status);
             response.setHeader(MESSAGE_ID.getName(), messageId);
+
+            milestones.put("HttpResponder.complete." + status, System.nanoTime());
 
             LOGGER.debug("MESSAGE ID: {}, TRACE: {}", messageId,
                     Arrays.toString(milestones.entrySet().toArray()));
