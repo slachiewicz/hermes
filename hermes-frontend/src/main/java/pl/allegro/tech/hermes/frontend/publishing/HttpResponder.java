@@ -100,8 +100,7 @@ public class HttpResponder {
 
             milestones.put("HttpResponder.complete." + desc.getCode().getHttpCode(), System.nanoTime());
 
-            LOGGER.debug("MESSAGE ID: {}, TRACE: {}", messageId,
-                    Arrays.toString(milestones.entrySet().toArray()));
+            LOGGER.debug("MESSAGE ID: {}, TRACE: {}", messageId, Arrays.toString(milestones.entrySet().toArray()));
 
             errorSender.sendErrorResponseQuietly(desc, response, messageId);
             asyncContext.complete();
@@ -122,8 +121,7 @@ public class HttpResponder {
 
             milestones.put("HttpResponder.complete." + status, System.nanoTime());
 
-            LOGGER.debug("MESSAGE ID: {}, TRACE: {}", messageId,
-                    Arrays.toString(milestones.entrySet().toArray()));
+            LOGGER.debug("MESSAGE ID: {}, TRACE: {}", messageId, Arrays.toString(milestones.entrySet().toArray()));
 
             asyncContext.complete();
         }

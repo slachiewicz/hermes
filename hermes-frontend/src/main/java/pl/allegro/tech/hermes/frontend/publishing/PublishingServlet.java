@@ -25,10 +25,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.strip;
@@ -79,7 +79,7 @@ public class PublishingServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        Map<String, Long> milestones = new HashMap<>();
+        Map<String, Long> milestones = new ConcurrentHashMap<>();
 
         milestones.put("PublishingServlet.doPost.start", System.nanoTime());
 
