@@ -107,34 +107,32 @@ public class PublishingServlet extends HttpServlet {
         asyncContext.addListener(new TimeoutAsyncListener(httpResponder, messageState) {
             @Override
             public void onTimeout(AsyncEvent event) {
-                asyncContext.start(() -> {
+
                     try {
                         super.onTimeout(event);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     milestones.put("TimeoutAsyncListener.onTimeout", System.nanoTime());
-                });
+
             }
         });
         asyncContext.addListener(new MetricsAsyncListener(hermesMetrics, topic.getName(), topic.getAck()) {
             @Override
             public void onTimeout(AsyncEvent event) throws IOException {
-                asyncContext.start(() -> {
                     try {
                         super.onTimeout(event);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     milestones.put("MetricsAsyncListener.onComplete", System.nanoTime());
-                });
             }
         });
         asyncContext.setTimeout(topic.isReplicationConfirmRequired() ? longAsyncTimeout : defaultAsyncTimeout);
 
         new MessageReader(request, chunkSize, topic.getName(), hermesMetrics, messageState,
                 messageContent -> {
-                    try {
+                    try { asyncContext.start(() -> {
                         milestones.put("MessageReader.onRead", System.nanoTime());
                         Message message = contentTypeEnforcer.enforce(request.getContentType(),
                                 new Message(messageId, messageContent, clock.getTime()), topic);
@@ -144,14 +142,12 @@ public class PublishingServlet extends HttpServlet {
                         asyncContext.addListener(new BrokerTimeoutAsyncListener(httpResponder, message, topic, messageState, listeners) {
                             @Override
                             public void onTimeout(AsyncEvent event) throws IOException {
-                                asyncContext.start(() -> {
                                     milestones.put("BrokerTimeoutAsyncListener.onTimeout", System.nanoTime());
                                     try {
                                         super.onTimeout(event);
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
-                                });
                             }
                         });
 
@@ -209,6 +205,7 @@ public class PublishingServlet extends HttpServlet {
                                     }
                                 });
 
+                        });
                     } catch (InvalidMessageException exception) {
                         httpResponder.badRequest(exception);
                     }
