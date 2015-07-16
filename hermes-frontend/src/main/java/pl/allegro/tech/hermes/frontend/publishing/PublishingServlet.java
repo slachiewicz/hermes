@@ -152,7 +152,7 @@ public class PublishingServlet extends HttpServlet {
                         });
 
                         milestones.put("MessageReader.onRead.publishing", System.nanoTime());
-                        messagePublisher.publish(message, topic, messageState, asyncContext,
+                        messagePublisher.publish(message, topic, messageState, asyncContext, milestones,
                                 new HttpPublishingCallback(httpResponder),
                                 new MetricsPublishingCallback(hermesMetrics, topic),
                                 new BrokerListenersPublishingCallback(listeners));
