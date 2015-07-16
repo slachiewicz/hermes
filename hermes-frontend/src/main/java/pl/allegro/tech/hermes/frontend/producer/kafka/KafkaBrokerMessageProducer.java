@@ -15,9 +15,9 @@ import pl.allegro.tech.hermes.frontend.publishing.PublishingCallback;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 public class KafkaBrokerMessageProducer implements BrokerMessageProducer {
@@ -41,7 +41,7 @@ public class KafkaBrokerMessageProducer implements BrokerMessageProducer {
 
     private void send(Message message, Topic topic, final List<PublishingCallback> callbacks) {
         try {
-            Map<String, Long> milestones = new HashMap<>();
+            Map<String, Long> milestones = new ConcurrentHashMap<>();
             byte[] content = contentWrapperProvider
                 .provide(topic.getContentType())
                 .wrapContent(message.getData(), message.getId(), message.getTimestamp());
@@ -72,18 +72,12 @@ public class KafkaBrokerMessageProducer implements BrokerMessageProducer {
         public void onCompletion(RecordMetadata recordMetadata, Exception e) {
             milestones.put("SendCallback.onCompletion", System.nanoTime());
             if (e != null) {
-                callbacks.forEach(c -> {
-                    milestones.put(c.getClass().getName(), System.nanoTime());
-                    c.onUnpublished(e);
-                });
+                callbacks.forEach(c -> c.onUnpublished(e));
             } else {
-                callbacks.forEach(c -> {
-                    milestones.put(c.getClass().getName(), System.nanoTime());
-                    c.onPublished(message, topic);
-                });
+                callbacks.forEach(c -> c.onPublished(message, topic));
             }
-            LOGGER.debug("MESSAGE ID: {}, BROKER TRACE: {}", message.getId(),
-                    Arrays.toString(milestones.entrySet().toArray()));
+            milestones.put("SendCallback.end", System.nanoTime());
+            LOGGER.debug("MESSAGE ID: {}, BROKER TRACE: {}", message.getId(), Arrays.toString(milestones.entrySet().toArray()));
         }
     }
 }

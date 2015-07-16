@@ -152,58 +152,10 @@ public class PublishingServlet extends HttpServlet {
                         });
 
                         milestones.put("MessageReader.onRead.publishing", System.nanoTime());
-                        messagePublisher.publish(message, topic, messageState,
-                                new HttpPublishingCallback(httpResponder) {
-                                    @Override
-                                    public void onUnpublished(Exception exception) {
-                                        asyncContext.start(() -> {
-                                            super.onUnpublished(exception);
-                                            milestones.put("HttpPublishingCallback.onUnpublished", System.nanoTime());
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onPublished(Message message, Topic topic) {
-                                        asyncContext.start(() -> {
-                                            super.onPublished(message, topic);
-                                            milestones.put("HttpPublishingCallback.onPublished", System.nanoTime());
-                                        });
-                                    }
-                                },
-                                new MetricsPublishingCallback(hermesMetrics, topic) {
-                                    @Override
-                                    public void onPublished(Message message, Topic topic) {
-                                        asyncContext.start(() -> {
-                                            super.onPublished(message, topic);
-                                            milestones.put("MetricsPublishingCallback.onPublished", System.nanoTime());
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onUnpublished(Exception exception) {
-                                        asyncContext.start(() -> {
-                                            super.onUnpublished(exception);
-                                            milestones.put("MetricsPublishingCallback.onUnpublished", System.nanoTime());
-                                        });
-                                    }
-                                },
-                                new BrokerListenersPublishingCallback(listeners) {
-                                    @Override
-                                    public void onUnpublished(Exception exception) {
-                                        asyncContext.start(() -> {
-                                            super.onUnpublished(exception);
-                                            milestones.put("BrokerListenersPublishingCallback.onUnpublished", System.nanoTime());
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onPublished(Message message, Topic topic) {
-                                    asyncContext.start(() -> {
-                                        super.onPublished(message, topic);
-                                        milestones.put("BrokerListenersPublishingCallback.onPublished", System.nanoTime());
-                                    });
-                                    }
-                                });
+                        messagePublisher.publish(message, topic, messageState, asyncContext,
+                                new HttpPublishingCallback(httpResponder),
+                                new MetricsPublishingCallback(hermesMetrics, topic),
+                                new BrokerListenersPublishingCallback(listeners));
 
                         });
                     } catch (InvalidMessageException exception) {
