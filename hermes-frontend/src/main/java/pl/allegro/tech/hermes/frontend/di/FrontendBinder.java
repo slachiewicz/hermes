@@ -8,8 +8,10 @@ import pl.allegro.tech.hermes.frontend.producer.BrokerMessageProducer;
 import pl.allegro.tech.hermes.frontend.producer.kafka.KafkaBrokerMessageProducer;
 import pl.allegro.tech.hermes.frontend.producer.kafka.KafkaMessageProducerFactory;
 import pl.allegro.tech.hermes.frontend.producer.kafka.Producers;
+import pl.allegro.tech.hermes.frontend.publishing.MessageContentTypeEnforcer;
 import pl.allegro.tech.hermes.frontend.publishing.MessagePublisher;
 import pl.allegro.tech.hermes.frontend.publishing.PublishingServlet;
+import pl.allegro.tech.hermes.frontend.publishing.avro.AvroSchemaRepository;
 import pl.allegro.tech.hermes.frontend.server.HermesServer;
 import pl.allegro.tech.hermes.frontend.services.HealthCheckService;
 import pl.allegro.tech.hermes.frontend.validator.MessageValidators;
@@ -38,6 +40,8 @@ public class FrontendBinder extends AbstractBinder {
         bindSingleton(NoOperationPublishingTracker.class);
         bindFactory(ZookeeperTopicsCacheFactory.class).to(TopicsCache.class).in(Singleton.class);
         bindSingleton(MessagePublisher.class);
+        bindSingleton(AvroSchemaRepository.class);
+        bindSingleton(MessageContentTypeEnforcer.class);
     }
 
     private <T> void bindSingleton(Class<T> clazz) {

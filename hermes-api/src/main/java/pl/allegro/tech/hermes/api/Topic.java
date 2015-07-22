@@ -8,19 +8,13 @@ import pl.allegro.tech.hermes.api.helpers.Patch;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.Objects;
-import java.util.function.Function;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class Topic {
-    @Valid @NotNull
+    @Valid
+    @NotNull
     private TopicName name;
 
     private String description;
-
-    private String messageSchema;
-
-    private Object compiledSchema;
 
     private boolean validationEnabled;
 
@@ -41,14 +35,14 @@ public class Topic {
 
     private boolean trackingEnabled;
 
-    private Topic() { }
+    private Topic() {
+    }
 
     public Topic(TopicName name, String description, RetentionTime retentionTime, String messageSchema,
                  boolean validationEnabled, Ack ack, boolean trackingEnabled, ContentType contentType) {
         this.name = name;
         this.description = description;
         this.retentionTime = retentionTime;
-        this.messageSchema = messageSchema;
         this.validationEnabled = validationEnabled;
         this.ack = ack;
         this.trackingEnabled = trackingEnabled;
@@ -67,7 +61,7 @@ public class Topic {
             @JsonProperty("contentType") ContentType contentType) {
 
         this(TopicName.fromQualifiedName(qualifiedName), description, retentionTime, messageSchema, validationEnabled, ack,
-             trackingEnabled, contentType);
+                trackingEnabled, contentType);
     }
 
     public RetentionTime getRetentionTime() {
@@ -76,7 +70,7 @@ public class Topic {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, description, retentionTime, messageSchema, validationEnabled, trackingEnabled, ack, contentType);
+        return Objects.hash(name, description, retentionTime, validationEnabled, trackingEnabled, ack, contentType);
     }
 
     @Override
@@ -90,13 +84,12 @@ public class Topic {
         final Topic other = (Topic) obj;
 
         return Objects.equals(this.name, other.name)
-            && Objects.equals(this.description, other.description)
-            && Objects.equals(this.retentionTime, other.retentionTime)
-            && Objects.equals(this.messageSchema, other.messageSchema)
-            && Objects.equals(this.validationEnabled, other.validationEnabled)
-            && Objects.equals(this.trackingEnabled, other.trackingEnabled)
-            && Objects.equals(this.ack, other.ack)
-            && Objects.equals(this.contentType, other.contentType);
+                && Objects.equals(this.description, other.description)
+                && Objects.equals(this.retentionTime, other.retentionTime)
+                && Objects.equals(this.validationEnabled, other.validationEnabled)
+                && Objects.equals(this.trackingEnabled, other.trackingEnabled)
+                && Objects.equals(this.ack, other.ack)
+                && Objects.equals(this.contentType, other.contentType);
     }
 
     @JsonProperty("name")
@@ -121,18 +114,6 @@ public class Topic {
         this.retentionTime = retentionTime;
     }
 
-    public String getMessageSchema() {
-        return messageSchema;
-    }
-
-    @JsonIgnore
-    public <T> T getCompiledSchema(Function<String, T> compiler) {
-        if (compiledSchema == null) {
-            compiledSchema = compiler.apply(getMessageSchema());
-        }
-        return (T) compiledSchema;
-    }
-
     @JsonProperty("validation")
     public boolean isValidationEnabled() {
         return validationEnabled || ContentType.AVRO == contentType;
@@ -153,11 +134,6 @@ public class Topic {
     @JsonIgnore
     public boolean isReplicationConfirmRequired() {
         return getAck() == Ack.ALL;
-    }
-
-    @JsonIgnore
-    public boolean isSchemaValidationRequired() {
-        return Topic.ContentType.AVRO == contentType || !isNullOrEmpty(messageSchema);
     }
 
     public static class Builder {
@@ -194,11 +170,6 @@ public class Topic {
 
         public Builder withRetentionTime(int retentionTime) {
             topic.retentionTime = new RetentionTime(retentionTime);
-            return this;
-        }
-
-        public Builder withMessageSchema(String messageSchema) {
-            topic.messageSchema = messageSchema;
             return this;
         }
 

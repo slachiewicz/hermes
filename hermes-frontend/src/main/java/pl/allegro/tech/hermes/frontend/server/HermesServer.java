@@ -69,7 +69,7 @@ public class HermesServer {
     }
 
     public void start() {
-        topicsCache.start(ImmutableList.of(messageValidators));
+        topicsCache.start(ImmutableList.of());
         configureServer().start();
     }
 

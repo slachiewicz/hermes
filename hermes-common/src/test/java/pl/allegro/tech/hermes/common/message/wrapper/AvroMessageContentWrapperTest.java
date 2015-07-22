@@ -26,7 +26,7 @@ public class AvroMessageContentWrapperTest {
         avroUser = new AvroUser();
         content = avroUser.create("Bob", 10, "red");
         avroMessageContentWrapper = new AvroMessageContentWrapper();
-        schema = avroMessageContentWrapper.getWrappedSchema(avroUser.getSchema());
+        schema = avroUser.getSchema();
     }
 
     @Test

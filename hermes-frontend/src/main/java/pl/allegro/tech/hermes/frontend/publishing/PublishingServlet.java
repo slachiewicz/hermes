@@ -58,13 +58,14 @@ public class PublishingServlet extends HttpServlet {
                              MessageValidators messageValidators,
                              Clock clock,
                              MessagePublisher messagePublisher,
+                             MessageContentTypeEnforcer contentTypeEnforcer,
                              BrokerListeners listeners) {
 
         this.topicsCache = topicsCache;
         this.messageValidators = messageValidators;
         this.clock = clock;
         this.messagePublisher = messagePublisher;
-        this.contentTypeEnforcer = new MessageContentTypeEnforcer();
+        this.contentTypeEnforcer = contentTypeEnforcer;
         this.errorSender = new ErrorSender(objectMapper);
         this.hermesMetrics = hermesMetrics;
         this.trackers = trackers;
@@ -102,9 +103,14 @@ public class PublishingServlet extends HttpServlet {
         new MessageReader(request, chunkSize, topic.getName(), hermesMetrics, messageState,
                 messageContent -> {
                     try {
-                        Message message = contentTypeEnforcer.enforce(request.getContentType(),
-                                new Message(messageId, messageContent, clock.getTime()), topic);
-
+                            Message message;
+                        try {
+                            message = contentTypeEnforcer.enforce(request.getContentType(),
+                                    new Message(messageId, messageContent, clock.getTime()), topic);
+                        } catch (Exception e) {
+                            httpResponder.badRequest(e, "Invalid message");
+                            return null;
+                        }
                         messageValidators.check(topic.getName(), message.getData());
 
                         asyncContext.addListener(new BrokerTimeoutAsyncListener(httpResponder, message, topic, messageState, listeners));
