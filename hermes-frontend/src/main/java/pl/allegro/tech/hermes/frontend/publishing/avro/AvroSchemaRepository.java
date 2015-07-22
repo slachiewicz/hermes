@@ -8,6 +8,8 @@ import org.schemarepo.Subject;
 import org.schemarepo.client.RESTRepositoryClient;
 import org.schemarepo.json.GsonJsonUtil;
 import pl.allegro.tech.hermes.api.Topic;
+import pl.allegro.tech.hermes.common.config.ConfigFactory;
+import pl.allegro.tech.hermes.common.config.Configs;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -15,8 +17,13 @@ import java.util.concurrent.TimeUnit;
 
 public class AvroSchemaRepository {
 
-    private RESTRepositoryClient restRepositoryClient =
-            new RESTRepositoryClient("xxx", new GsonJsonUtil(), false);
+    private RESTRepositoryClient restRepositoryClient;
+
+    public AvroSchemaRepository(ConfigFactory configFactory) {
+        this.restRepositoryClient = new RESTRepositoryClient(configFactory.getStringProperty(Configs.SCHEMA_REGISTRY_SERVER_URI),
+                new GsonJsonUtil(),
+                false);
+    }
 
     private LoadingCache<Topic, Schema> schemaCache = CacheBuilder.newBuilder()
             .maximumSize(1000)
@@ -34,10 +41,6 @@ public class AvroSchemaRepository {
                             return new Schema.Parser().parse(schema.latest().getSchema());
                         }
                     });
-
-    public AvroSchemaRepository() {
-    }
-
 
     public Schema findSchema(Topic topic) {
         try {

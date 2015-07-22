@@ -112,7 +112,8 @@ public enum Configs {
     METADATA_CONTENT_ROOT("message.content.root", "metadata"),
     GRAPHITE_PREFIX("graphite.prefix", "stats.tech.hermes"),
 
-    UNDELIVERED_MESSAGE_LOG_PERSIST_PERIOD_MS("undelivered.message.log.persist.period.ms", 5000);
+    UNDELIVERED_MESSAGE_LOG_PERSIST_PERIOD_MS("undelivered.message.log.persist.period.ms", 5000),
+    SCHEMA_REGISTRY_SERVER_URI("schema.registry.server.url", "");
 
     private final String name;
 
