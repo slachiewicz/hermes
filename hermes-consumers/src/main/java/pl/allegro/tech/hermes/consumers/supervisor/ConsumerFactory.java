@@ -78,7 +78,8 @@ public class ConsumerFactory {
             consumerMessageSenderFactory.create(subscription, consumerRateLimiter, subscriptionOffsetCommitQueues, inflightSemaphore),
             inflightSemaphore,
             trackers,
-            messageConverterFactory.create(topic.getContentType(), topic.getMessageSchema()));
+            null);
+//            messageConverterFactory.create(topic.getContentType(), topic.getMessageSchema()));
     }
 
 }

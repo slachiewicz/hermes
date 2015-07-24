@@ -2,7 +2,7 @@ package pl.allegro.tech.hermes.frontend.publishing;
 
 
 import pl.allegro.tech.hermes.api.Topic;
-import pl.allegro.tech.hermes.frontend.publishing.avro.AvroSchemaRepository;
+import pl.allegro.tech.hermes.common.message.wrapper.AvroSchemaRepository;
 import pl.allegro.tech.hermes.frontend.publishing.avro.JsonToAvroMessageConverter;
 
 import javax.inject.Inject;
@@ -22,7 +22,7 @@ public class MessageContentTypeEnforcer {
 
     public Message enforce(String messageContentType, Message message, Topic topic) {
         if (APPLICATION_JSON.equalsIgnoreCase(messageContentType) && AVRO == topic.getContentType()) {
-            return messageConverter.convert(message, avroSchemaRepository.findSchema(topic));
+            return messageConverter.convert(message, avroSchemaRepository.findSchema(topic.getQualifiedName()));
         }
         return message;
     }

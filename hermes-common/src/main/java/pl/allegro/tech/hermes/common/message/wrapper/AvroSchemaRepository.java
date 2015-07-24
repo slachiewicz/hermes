@@ -1,4 +1,4 @@
-package pl.allegro.tech.hermes.frontend.publishing.avro;
+package pl.allegro.tech.hermes.common.message.wrapper;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -7,10 +7,10 @@ import org.apache.avro.Schema;
 import org.schemarepo.Subject;
 import org.schemarepo.client.RESTRepositoryClient;
 import org.schemarepo.json.GsonJsonUtil;
-import pl.allegro.tech.hermes.api.Topic;
 import pl.allegro.tech.hermes.common.config.ConfigFactory;
 import pl.allegro.tech.hermes.common.config.Configs;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -19,20 +19,23 @@ public class AvroSchemaRepository {
 
     private RESTRepositoryClient restRepositoryClient;
 
+    @Inject
     public AvroSchemaRepository(ConfigFactory configFactory) {
-        this.restRepositoryClient = new RESTRepositoryClient(configFactory.getStringProperty(Configs.SCHEMA_REGISTRY_SERVER_URI),
-                new GsonJsonUtil(),
-                false);
+        this(configFactory.getStringProperty(Configs.SCHEMA_REGISTRY_SERVER_URI));
     }
 
-    private LoadingCache<Topic, Schema> schemaCache = CacheBuilder.newBuilder()
+    public AvroSchemaRepository(String serverUri) {
+        this.restRepositoryClient = new RESTRepositoryClient(serverUri, new GsonJsonUtil(), false);
+    }
+
+    private LoadingCache<String, Schema> schemaCache = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(10, TimeUnit.MINUTES)
             .build(
-                    new CacheLoader<Topic, Schema>() {
-                        public Schema load(Topic topic) throws IOException {
+                    new CacheLoader<String, Schema>() {
+                        public Schema load(String topic) throws IOException {
 
-                            Subject schema = restRepositoryClient.lookup(topic.getQualifiedName());
+                            Subject schema = restRepositoryClient.lookup(topic);
 
                             if (schema == null) {
                                 throw new IllegalStateException("Cannot find schema for avro topic");
@@ -42,7 +45,7 @@ public class AvroSchemaRepository {
                         }
                     });
 
-    public Schema findSchema(Topic topic) {
+    public Schema findSchema(String topic) {
         try {
             return schemaCache.get(topic);
         } catch (ExecutionException e) {

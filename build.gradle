@@ -28,6 +28,10 @@ allprojects {
     apply plugin: 'java'
     apply plugin: 'jacoco'
 
+    apply plugin: 'application'
+
+    mainClassName = "pl.allegro.tech.hermes.frontend.HermesFrontend"
+
     group = 'pl.allegro.tech.hermes'
     version = scmVersion.version
 

@@ -2,9 +2,7 @@ package pl.allegro.tech.hermes.frontend.publishing;
 
 import pl.allegro.tech.hermes.api.Topic;
 import pl.allegro.tech.hermes.api.TopicName;
-import pl.allegro.tech.hermes.common.metric.Counters;
 import pl.allegro.tech.hermes.common.metric.HermesMetrics;
-import pl.allegro.tech.hermes.common.metric.Meters;
 import pl.allegro.tech.hermes.common.metric.timer.ProducerAckAllLatencyTimer;
 import pl.allegro.tech.hermes.common.metric.timer.ProducerAckLeaderLatencyTimer;
 import pl.allegro.tech.hermes.common.metric.timer.ProducerLatencyTimer;
@@ -13,8 +11,6 @@ import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-
-import static javax.ws.rs.core.Response.Status.Family;
 
 class MetricsAsyncListener implements AsyncListener {
 
@@ -43,11 +39,11 @@ class MetricsAsyncListener implements AsyncListener {
         hermesMetrics.httpStatusCodeMeter(responseStatus).mark();
         hermesMetrics.httpStatusCodeMeter(responseStatus, topicName).mark();
 
-        if (Family.SUCCESSFUL != Family.familyOf(responseStatus)) {
-            hermesMetrics.meter(Meters.PRODUCER_FAILED_METER).mark();
-            hermesMetrics.meter(Meters.PRODUCER_FAILED_TOPIC_METER, topicName).mark();
-            hermesMetrics.counter(Counters.PRODUCER_UNPUBLISHED, topicName).inc();
-        }
+//        if (Family.SUCCESSFUL != Family.familyOf(responseStatus)) {
+//            hermesMetrics.meter(Meters.PRODUCER_FAILED_METER).mark();
+//            hermesMetrics.meter(Meters.PRODUCER_FAILED_TOPIC_METER, topicName).mark();
+//            hermesMetrics.counter(Counters.PRODUCER_UNPUBLISHED, topicName).inc();
+//        }
     }
 
     @Override

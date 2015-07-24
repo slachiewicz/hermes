@@ -5,8 +5,7 @@ import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.main.JsonSchemaFactory;
 import org.apache.avro.Schema;
 import pl.allegro.tech.hermes.api.Topic;
-import pl.allegro.tech.hermes.frontend.publishing.avro.AvroSchemaRepository;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import pl.allegro.tech.hermes.common.message.wrapper.AvroSchemaRepository;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -23,7 +22,7 @@ public class TopicMessageValidatorFactory {
     }
 
     public TopicMessageValidator create(Topic topic) throws IOException, ProcessingException {
-        Schema schema = avroSchemaRepository.findSchema(topic);
+        Schema schema = avroSchemaRepository.findSchema(topic.getQualifiedName());
 
         switch (topic.getContentType()) {
             case JSON:
@@ -40,7 +39,7 @@ public class TopicMessageValidatorFactory {
     }
 
     private TopicMessageValidator createJsonTopicMessageValidator(Topic topic) throws IOException, ProcessingException {
-        throw new NotImplementedException();
+        throw new RuntimeException("not implemented");
 
 //        return new JsonTopicMessageValidator(
 //            jsonSchemaFactory.getJsonSchema(objectMapper.readTree(topic.getMessageSchema())),
